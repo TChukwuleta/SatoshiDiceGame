@@ -63,12 +63,132 @@ namespace SatoshiDice.Application.PlayGame.Commands
                     CreatedDate = DateTime.Now,
                     Amount = request.Amount,
                     TransactionReference = uniqueId,
-                    TransactionType = TransactionType.Credit
+                    TransactionType = TransactionType.Credit,
                     TransactionStatus = TransactionStatus.Success
                 });
-                await _context.Transactions.AddRangeAsync(transactionRequests);
+                decimal winAmount = request.Amount;
+                decimal rate = default;
+                var guessDiff = request.MaximimNumberGuess - request.MinimumNumberGuess;
+                switch (guessDiff)
+                {
+                    case 0:
+                        break;
+                    case int i when i > 0 && i <= 10:
+                        rate = winAmount * (decimal)0.9;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 10 && i <= 10:
+                        rate = winAmount * (decimal)0.8;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 20 && i <= 30:
+                        rate = winAmount * (decimal)0.7;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 30 && i <= 40:
+                        rate = winAmount * (decimal)0.6;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 40 && i <= 50:
+                        rate = winAmount * (decimal)0.5;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 50 && i <= 60:
+                        rate = winAmount * (decimal)0.4;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 60 && i <= 70:
+                        rate = winAmount * (decimal)0.3;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 70 && i <= 80:
+                        rate = winAmount * (decimal)0.2;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 80 && i <= 90:
+                        rate = winAmount * (decimal)0.1;
+                        winAmount += rate;
+                        break;
+                    case int i when i > 90 && i <= 100:
+                        return Result.Failure("Guess margin too wide. Kindly select a lower margin");
+                    default:
+                        break;
+                }
+                Random rand = new Random();
+                int gameNumber = rand.Next(1, 100);
+                if (request.MinimumNumberGuess >= gameNumber && request.MaximimNumberGuess <= gameNumber)
+                {
+                    player.Balance += winAmount;
+                    _context.Players.Update(player);
+                    transactionRequests.Add(new Transaction
+                    {
+                        UserId = request.UserId,
+                        CreatedDate = DateTime.Now,
+                        Amount = winAmount,
+                        TransactionReference = uniqueId,
+                        TransactionType = TransactionType.Credit,
+                        TransactionStatus = TransactionStatus.Success
+                    });
+                    transactionRequests.Add(new Transaction
+                    {
+                        UserId = "gameowner userid",
+                        CreatedDate = DateTime.Now,
+                        Amount = winAmount,
+                        TransactionReference = uniqueId,
+                        TransactionType = TransactionType.Debit,
+                        TransactionStatus = TransactionStatus.Success
+                    });
+                    await _context.Transactions.AddRangeAsync(transactionRequests);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    var response = new
+                    {
+                        AmountWon = winAmount,
+                        DiceValue = gameNumber
+                    };
+                    return Result.Success("Yaaayyyyyy... You win");
+                }
+                if (request.GameInsured)
+                {
+                    if (request.MinimumNumberGuess - gameNumber <= 10 || gameNumber - request.MaximimNumberGuess <= 10)
+                    {
+                        winAmount *= (decimal)0.3;
+                        player.Balance += winAmount;
+                        _context.Players.Update(player);
+                        transactionRequests.Add(new Transaction
+                        {
+                            UserId = request.UserId,
+                            CreatedDate = DateTime.Now,
+                            Amount = winAmount,
+                            TransactionReference = uniqueId,
+                            TransactionType = TransactionType.Credit,
+                            TransactionStatus = TransactionStatus.Success
+                        });
+                        transactionRequests.Add(new Transaction
+                        {
+                            UserId = "gameowner userid",
+                            CreatedDate = DateTime.Now,
+                            Amount = winAmount,
+                            TransactionReference = uniqueId,
+                            TransactionType = TransactionType.Debit,
+                            TransactionStatus = TransactionStatus.Success
+                        });
+                        await _context.Transactions.AddRangeAsync(transactionRequests);
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+                    var response = new
+                    {
+                        AmountWon = winAmount,
+                        DiceValue = gameNumber
+                    };
+                    return Result.Success("Opps... Please play again", response);
+                }
                 await _context.SaveChangesAsync(cancellationToken);
-
+                var failedResponse = new
+                {
+                    AmountWon = 0,
+                    DiceValue = gameNumber
+                };
+                return Result.Failure("Oops... You lost, please play again", failedResponse);
             }
             catch (Exception ex)
             {
