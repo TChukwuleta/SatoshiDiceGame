@@ -12,6 +12,8 @@ namespace SatoshiDice.Application.Player.Queries
 {
     public class GetPlayersQuery : IRequest<Result>
     {
+        public int Skip { get; set; }
+        public int Take { get; set; }
     }
 
     public class GetPlayersQueryHandler : IRequestHandler<GetPlayersQuery, Result>
@@ -28,7 +30,8 @@ namespace SatoshiDice.Application.Player.Queries
             {
                 var players = await _context.Players.ToListAsync();
                 if (players.Count <= 0) return Result.Failure("No players found");
-                return Result.Success("Players retrieval was successful", new { Players = players, Count = players.Count()});
+                if(request.Skip == 0 && request.Take == 0) return Result.Success("Players retrieval was successful", new { Players = players, Count = players.Count() });
+                return Result.Success("Players retrieval was successful", new { Players = players.Skip(request.Skip).Take(request.Take).ToList(), Count = players.Count() });
             }
             catch (Exception ex)
             {
