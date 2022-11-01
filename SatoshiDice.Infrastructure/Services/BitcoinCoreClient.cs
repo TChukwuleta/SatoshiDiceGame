@@ -23,25 +23,22 @@ namespace SatoshiDice.Infrastructure.Services
             apiRequestDto = new ApiRequestDto();
         }
 
-        public async Task<string> ServerRequest(string methodName, List<JToken> parameters)
+        public async Task<string> ServerRequest(string methodName, List<string> parameters)
         {
             try
             {
                 string bitcoinUrl = _config["Bitcoin:URl"];
                 string username = _config["Bitcoin:username"];
                 string password = _config["Bitcoin:password"];
-
                 HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(bitcoinUrl);
                 webRequest.Credentials = new NetworkCredential(username, password);
                 webRequest.Method = "POST";
                 webRequest.ContentType = "application/json-rpc";
-
                 string response = string.Empty;
                 JObject jObject = new JObject();
                 jObject.Add(new JProperty("jsonrpc", "1.0"));
-                jObject.Add(new JProperty("id", "1"));
+                jObject.Add(new JProperty("id", "curltext"));
                 jObject.Add(new JProperty("method", methodName));
-
                 JArray props = new JArray();
                 foreach (var item in parameters)
                 {
@@ -62,7 +59,6 @@ namespace SatoshiDice.Infrastructure.Services
                 WebResponse webResponse = webRequest.GetResponse();
                 reader = new StreamReader(webRequest.GetRequestStream(), true);
                 response = reader.ReadToEnd();
-
                 var data = JsonConvert.DeserializeObject(response).ToString();
                 return data;
             }
@@ -72,7 +68,7 @@ namespace SatoshiDice.Infrastructure.Services
             }
         }
 
-        public async Task<string> ServerRequest(string methodName, List<string> parameters)
+        /*public async Task<string> ServerRequest(string methodName, List<string> parameters)
         {
             try
             {
@@ -83,6 +79,46 @@ namespace SatoshiDice.Infrastructure.Services
             {
                 throw ex;
             }
+        }*/
+
+        public async Task<string> BitcoinRequestServer(string methodName, List<string> Parameters)
+        {
+            string serverIp = _config["Bitcoin:URl"];
+            string username = _config["Bitcoin:username"];
+            string Password = _config["Bitcoin:password"];
+            /*string serverIp = "http://127.0.0.1:18332";
+            string username = "chukwuleta";
+            string Password = "Iamgreat97";*/
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(serverIp);
+            webRequest.Credentials = new NetworkCredential(username, Password);
+            webRequest.ContentType = "application/json-rpc";
+            webRequest.Method = "POST";
+            string responseValue = string.Empty;
+            JObject joe = new JObject();
+            joe.Add(new JProperty("jsonrpc", "1.0"));
+            joe.Add(new JProperty("id", "curltext"));
+            joe.Add(new JProperty("method", methodName));
+            JArray props = new JArray();
+            foreach (var parameter in Parameters)
+            {
+                props.Add(parameter);
+            }
+            joe.Add(new JProperty("params", props));
+            // Serialize json for request
+            string s = JsonConvert.SerializeObject(joe);
+            byte[] byteArray = Encoding.UTF8.GetBytes(s);
+            webRequest.ContentLength = byteArray.Length;
+            Stream dataStream = webRequest.GetRequestStream();
+            dataStream.Write(byteArray, 0, byteArray.Length);
+            dataStream.Close();
+
+            // Deserialize the response
+            StreamReader streamReader = null;
+            WebResponse webResponse = webRequest.GetResponse();
+            streamReader = new StreamReader(webResponse.GetResponseStream(), true);
+            responseValue = streamReader.ReadToEnd();
+            var data = JsonConvert.DeserializeObject(responseValue).ToString();
+            return data;
         }
 
         private RestRequest CreateRestClientRequest()
@@ -94,6 +130,38 @@ namespace SatoshiDice.Infrastructure.Services
             request.AddHeader("Content-Type", "text/plain");
             return request;
 
+        }
+
+        public string GetRawTransaction(string txid)
+        {
+            string bitcoinUrl = _config["Bitcoin:URl"];
+            string username = _config["Bitcoin:username"];
+            string password = _config["Bitcoin:password"];
+            string jsonReq = default;
+            try
+            {
+                var credentialCache = new CredentialCache();
+                credentialCache.Add(new Uri(bitcoinUrl), "Basic", new NetworkCredential(username, password));
+                var httpWebRequest =(HttpWebRequest)WebRequest.Create(bitcoinUrl);
+                httpWebRequest.Method = "POST";
+                httpWebRequest.ContentType = "text/json";
+                httpWebRequest.Credentials = credentialCache;
+                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                {
+                    jsonReq = "{ \"jsonrpc\": \"2.0\", \"id\":\"" + Guid.NewGuid().ToString() + "\", \"method\": \"getrawtransaction\",\"params\":[\"" + txid + "\",1]}";
+                    streamWriter.Write(jsonReq);
+                }
+                var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                {
+                    var responseText = streamReader.ReadToEnd();
+                    return responseText;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
     }
 }
