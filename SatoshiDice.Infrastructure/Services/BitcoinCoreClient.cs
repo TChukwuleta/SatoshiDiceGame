@@ -86,9 +86,6 @@ namespace SatoshiDice.Infrastructure.Services
             string serverIp = _config["Bitcoin:URl"];
             string username = _config["Bitcoin:username"];
             string Password = _config["Bitcoin:password"];
-            /*string serverIp = "http://127.0.0.1:18332";
-            string username = "chukwuleta";
-            string Password = "Iamgreat97";*/
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(serverIp);
             webRequest.Credentials = new NetworkCredential(username, Password);
             webRequest.ContentType = "application/json-rpc";
