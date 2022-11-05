@@ -1,7 +1,9 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+//using Newtonsoft.Json;
 using SatoshiDice.Application.Interfaces;
+using SatoshiDice.Domain.Common.Responses;
 using SatoshiDice.Domain.Entities;
 using SatoshiDice.Domain.Enums;
 using SatoshiDice.Domain.Model;
@@ -9,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SatoshiDice.Application.PlayGame.Commands
@@ -25,11 +28,13 @@ namespace SatoshiDice.Application.PlayGame.Commands
     public class PlayGameCommandHandler : IRequestHandler<PlayGameCommand, Result>
     {
         private readonly IAppDbContext _context;
+        private readonly IBitcoinCoreClient _bitcoinCoreClient;
         private readonly IConfiguration _config;
-        public PlayGameCommandHandler(IAppDbContext context, IConfiguration config)
+        public PlayGameCommandHandler(IAppDbContext context, IConfiguration config, IBitcoinCoreClient bitcoinCoreClient)
         {
             _context = context;
             _config = config;
+            _bitcoinCoreClient = bitcoinCoreClient;
         }
 
         public async Task<Result> Handle(PlayGameCommand request, CancellationToken cancellationToken)
@@ -43,11 +48,20 @@ namespace SatoshiDice.Application.PlayGame.Commands
                 var minimumDiceNumber = _config["MinimumDiceNumber"];
                 var maximumDiceNumber = _config["MaximumDiceNumber"];
                 var gameOwnerUserId = _config["GameOwnerId"];
+                if (request.MaximimNumberGuess < request.MinimumNumberGuess) return Result.Failure("Maximum guess number cannot be less than the minimum guess number");
                 if(request.MaximimNumberGuess > int.Parse(maximumDiceNumber)) return Result.Failure("Maximum number guess greater than guess limit. Please guess a number between 1 and 100");
                 if (request.MinimumNumberGuess < int.Parse(minimumDiceNumber)) return Result.Failure("Minimum number guess less than guess limit. Please guess a number between 1 and 100");
                 if (request.MaximimNumberGuess > int.Parse(maximumDiceNumber) && request.MinimumNumberGuess < int.Parse(minimumDiceNumber)) return Result.Failure("Both guess numbers out of range");
-                if (player.Balance < request.Amount) return Result.Failure("Insufficient balance. Kindly top up your account");
-                player.Balance -= request.Amount;
+                // check bitcoin for balance
+                var userBalanceResponse = await _bitcoinCoreClient.BitcoinRequestServer("getwalletinfo");
+                if (string.IsNullOrEmpty(userBalanceResponse))
+                {
+                    return Result.Failure("Unable to retrieve user bitcoin information at the moment");
+                }
+                var userBalance = JsonSerializer.Deserialize<GetWalletInfoResponse>(userBalanceResponse);
+
+                if (userBalance.result.balance < request.Amount) return Result.Failure("Insufficient balance. Kindly top up your account");
+                player.Balance = userBalance.result.balance - request.Amount;
                 _context.Players.Update(player);
                 transactionRequests.Add(new Transaction
                 {
@@ -78,29 +92,29 @@ namespace SatoshiDice.Application.PlayGame.Commands
                 {
                     case 0:
                         break;
-                    case int i when i > 0 && i <= 10:
+                    case  > 0 and <= 10:
                         rate = winAmount * (decimal)0.04;
                         break;
-                    case int i when i > 10 && i <= 20:
+                    case > 10 and <= 20:
                         rate = winAmount * (decimal)0.03;
                         break;
-                    case int i when i > 20 && i <= 30:
+                    case > 20 and <= 30:
                         rate = winAmount * (decimal)0.02;
                         break;
-                    case int i when i > 30 && i <= 40:
+                    case > 30 and <= 40:
                         rate = winAmount * (decimal)0.01;
                         break;
-                    case int i when i > 40 && i <= 50:
+                    case > 40 and <= 50:
                         break;
-                    case int i when i > 50 && i <= 60:
+                    case > 50 and <= 60:
                         break;
-                    case int i when i > 60 && i <= 70:
+                    case> 60 and <= 70:
                         break;
-                    case int i when i > 70 && i <= 80:
+                    case> 70 and <= 80:
                         break;
-                    case int i when i > 80 && i <= 90:
+                    case> 80 and <= 90:
                         break;
-                    case int i when i > 90 && i <= 100:
+                    case > 90 and <= 100:
                         break;
                     default:
                         break;

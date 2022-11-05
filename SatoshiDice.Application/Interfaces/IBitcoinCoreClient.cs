@@ -12,6 +12,7 @@ namespace SatoshiDice.Application.Interfaces
         //Task<string> ServerRequest(string methodName, List<JToken> parameters);
         Task<string> ServerRequest(string methodName, List<string> parameters);
         Task<string> BitcoinRequestServer(string methodName, List<string> parameters);
+        Task<string> BitcoinRequestServer(string methodName);
         string GetRawTransaction(string txid);
     }
 }
