@@ -26,7 +26,7 @@ namespace SatoshiDice.Application.TestEndpoints
         {
             try
             {
-               var response = _btcClient.BitcoinRequestServer("getwalletinfo");
+               var response = _btcClient.BitcoinRequestServer("gettransaction", request.Address);
                 return Result.Success("wallet created successfully", response);
             }
             catch (Exception)

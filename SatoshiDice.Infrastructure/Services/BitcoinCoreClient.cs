@@ -24,67 +24,46 @@ namespace SatoshiDice.Infrastructure.Services
             apiRequestDto = new ApiRequestDto();
         }
 
-        public async Task<string> ServerRequest(string methodName, List<string> parameters)
+        public async Task<string> BitcoinRequestServer(string methodName, List<JToken> parameters)
         {
-            try
-            {
-                string bitcoinUrl = _config["Bitcoin:URl"];
-                string username = _config["Bitcoin:username"];
-                string password = _config["Bitcoin:password"];
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(bitcoinUrl);
-                webRequest.Credentials = new NetworkCredential(username, password);
-                webRequest.Method = "POST";
-                webRequest.ContentType = "application/json-rpc";
-                string response = string.Empty;
-                JObject jObject = new JObject();
-                jObject.Add(new JProperty("jsonrpc", "1.0"));
-                jObject.Add(new JProperty("id", "curltext"));
-                jObject.Add(new JProperty("method", methodName));
-                JArray props = new JArray();
-                foreach (var item in parameters)
-                {
-                    props.Add(item);
-                }
-                jObject.Add(new JProperty("params", props));
+            string ServerIp = _config["Bitcoin:URl"];
+            string UserName = _config["Bitcoin:username"];
+            string Password = _config["Bitcoin:password"];
 
-                // Serialize JSON for request
-                string s = JsonConvert.SerializeObject(jObject);
-                byte[] bytes = Encoding.UTF8.GetBytes(s);
-                webRequest.ContentLength = bytes.Length;
-                Stream stream = webRequest.GetRequestStream();
-                stream.Write(bytes, 0, bytes.Length);
-                stream.Close();
-
-                // Deserialize the response
-                StreamReader reader = null;
-                WebResponse webResponse = webRequest.GetResponse();
-                reader = new StreamReader(webRequest.GetRequestStream(), true);
-                response = reader.ReadToEnd();
-                var data = JsonConvert.DeserializeObject(response).ToString();
-                return data;
-            }
-            catch (Exception ex)
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(ServerIp);
+            webRequest.Credentials = new NetworkCredential(UserName, Password);
+            webRequest.ContentType = "application/json-rpc";
+            webRequest.Method = "POST";
+            string responseValue = string.Empty;
+            JObject joe = new JObject();
+            joe.Add(new JProperty("jsonrpc", "1.0"));
+            joe.Add(new JProperty("id", "1"));
+            joe.Add(new JProperty("method", methodName));
+            JArray props = new JArray();
+            foreach (var parameter in parameters)
             {
-                throw ex;
+                props.Add(parameter);
             }
+            joe.Add(new JProperty("params", props));
+            // serialize JSON for request
+            string s = JsonConvert.SerializeObject(joe);
+            byte[] byteArray = Encoding.UTF8.GetBytes(s);
+            webRequest.ContentLength = byteArray.Length;
+            Stream dataStream = webRequest.GetRequestStream();
+            dataStream.Write(byteArray, 0, byteArray.Length);
+            dataStream.Close();
+            // deserialze the response
+            StreamReader sReader = null;
+            WebResponse webResponse = webRequest.GetResponse();
+            sReader = new StreamReader(webResponse.GetResponseStream(), true);
+            responseValue = sReader.ReadToEnd();
+            var data = JsonConvert.DeserializeObject(responseValue).ToString();
+            return data;
         }
-
-        /*public async Task<string> ServerRequest(string methodName, List<string> parameters)
-        {
-            try
-            {
-                var response = await ServerRequest(methodName, parameters.Select(c => new JValue(c)).ToList<JToken>());
-                return response;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }*/
 
         public async Task<string> BitcoinRequestServer(string methodName, List<string> Parameters)
         {
-            string serverIp = _config["Bitcoin:URl"];
+            /*string serverIp = _config["Bitcoin:URl"];
             string username = _config["Bitcoin:username"];
             string Password = _config["Bitcoin:password"];
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(serverIp);
@@ -116,7 +95,8 @@ namespace SatoshiDice.Infrastructure.Services
             streamReader = new StreamReader(webResponse.GetResponseStream(), true);
             responseValue = streamReader.ReadToEnd();
             var data = JsonConvert.DeserializeObject(responseValue).ToString();
-            return data;
+            return data;*/
+            return await BitcoinRequestServer(methodName, Parameters.Select(c => new JValue(c)).ToList<JToken>());
         }
 
         public async Task<string> BitcoinRequestServer(string methodName)
@@ -148,6 +128,18 @@ namespace SatoshiDice.Infrastructure.Services
             responseValue = streamReader.ReadToEnd();
             var data = JsonConvert.DeserializeObject(responseValue).ToString();
             return data;
+        }
+
+        public async Task<string> BitcoinRequestServer(string methodName, string parameters)
+        {
+            string bitcoinUrl = _config["Bitcoin:URl"];
+            string username = _config["Bitcoin:username"];
+            string password = _config["Bitcoin:password"];
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(bitcoinUrl);
+            webRequest.Credentials = new NetworkCredential(username, password);
+            webRequest.ContentType = "application/json-rpc";
+            webRequest.Method = "POST";
+            throw new NotImplementedException();
         }
 
         private RestRequest CreateRestClientRequest()

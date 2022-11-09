@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SatoshiDice.Application.BitcoinMethods;
 using SatoshiDice.Application.Player.Commands;
 using SatoshiDice.Application.PlayGame.Commands;
 using SatoshiDice.Domain.Model;
@@ -19,6 +20,19 @@ namespace SatoshiDice.Api.Controllers
 
         [HttpPost("playgame")]
         public async Task<ActionResult<Result>> PlayGame(PlayGameCommand command)
+        {
+            try
+            {
+                return await _mediator.Send(command);
+            }
+            catch (Exception ex)
+            {
+                return Result.Failure($"Failed to play game. Error: {ex?.Message ?? ex?.InnerException?.Message}");
+            }
+        }
+
+        [HttpPost("createrawtransaction")]
+        public async Task<ActionResult<Result>> CreateRawTransaction(CreateRawTransactionCommand command)
         {
             try
             {
