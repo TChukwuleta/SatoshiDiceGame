@@ -37,7 +37,7 @@ namespace SatoshiDice.Infrastructure.Services
             string responseValue = string.Empty;
             JObject joe = new JObject();
             joe.Add(new JProperty("jsonrpc", "1.0"));
-            joe.Add(new JProperty("id", "1"));
+            joe.Add(new JProperty("id", "curltest"));
             joe.Add(new JProperty("method", methodName));
             JArray props = new JArray();
             foreach (var parameter in parameters)
@@ -130,16 +130,37 @@ namespace SatoshiDice.Infrastructure.Services
             return data;
         }
 
-        public async Task<string> BitcoinRequestServer(string methodName, string parameters)
+        public async Task<string> BitcoinRequestServer(string methodName, string parameter)
         {
-            string bitcoinUrl = _config["Bitcoin:URl"];
+            string serverIp = _config["Bitcoin:URl"];
             string username = _config["Bitcoin:username"];
-            string password = _config["Bitcoin:password"];
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(bitcoinUrl);
-            webRequest.Credentials = new NetworkCredential(username, password);
+            string Password = _config["Bitcoin:password"];
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(serverIp);
+            webRequest.Credentials = new NetworkCredential(username, Password);
             webRequest.ContentType = "application/json-rpc";
             webRequest.Method = "POST";
-            throw new NotImplementedException();
+            string responseValue = string.Empty;
+            JObject joe = new JObject();
+            joe.Add(new JProperty("jsonrpc", "1.0"));
+            joe.Add(new JProperty("id", "curltext"));
+            joe.Add(new JProperty("method", methodName));
+            JArray props = new JArray();
+            props.Add(parameter);
+            joe.Add(new JProperty("params", props));
+            // Serialize json for request
+            string s = JsonConvert.SerializeObject(joe);
+            byte[] byteArray = Encoding.UTF8.GetBytes(s);
+            webRequest.ContentLength = byteArray.Length;
+            Stream dataStream = webRequest.GetRequestStream();
+            dataStream.Write(byteArray, 0, byteArray.Length);
+            dataStream.Close();
+            // Deserialize the response
+            StreamReader streamReader = null;
+            WebResponse webResponse = webRequest.GetResponse();
+            streamReader = new StreamReader(webResponse.GetResponseStream(), true);
+            responseValue = streamReader.ReadToEnd();
+            var data = JsonConvert.DeserializeObject(responseValue).ToString();
+            return data;
         }
 
         private RestRequest CreateRestClientRequest()

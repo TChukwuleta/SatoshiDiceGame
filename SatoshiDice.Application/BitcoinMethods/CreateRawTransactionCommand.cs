@@ -33,6 +33,7 @@ namespace SatoshiDice.Application.BitcoinMethods
                 var listUnspentResponse = await _bitcoinCoreClient.BitcoinRequestServer("listunspent");
                 var listUnspentTransactions = JsonSerializer.Deserialize<UTXOResult>(listUnspentResponse);
                 var paymentTx = listUnspentTransactions.result.FirstOrDefault(c => c.amount > 1);
+                var maxTx = listUnspentTransactions.result.Max(c => c.amount);
                 if(paymentTx != null)
                 {
                     // Pay with that particular transaction
@@ -42,22 +43,26 @@ namespace SatoshiDice.Application.BitcoinMethods
                 {
                     JObject jFromTx = new JObject
                     {
-                        { "txid", Convert.ToInt32(txn.txid) },
-                        { "vount", txn.vout }
+                        { "txid", txn.txid },
+                        { "vout", txn.vout }
                     };
                     jArray.Add(jFromTx);
                 }
-
                 JObject jtoTx = new JObject
                 {
-                    { request.ToAddress }
+                    { request.ToAddress, 0.000005 }
                 };
                 JContainer jArray2 = new JArray
                 {
                     jtoTx
                 };
-                var data = JObject.Parse( await _bitcoinCoreClient.BitcoinRequestServer("createrawtransaction", new List<JToken>() { jArray, jArray2 }));
-                return Result.Success("Getting list of UTXO was successful", listUnspentTransactions);
+                var data = await _bitcoinCoreClient.BitcoinRequestServer("createrawtransaction", new List<JToken>() { jArray, jArray2 });
+                var rawTransactionResponse = JsonSerializer.Deserialize<CreateRawTransactionResponse>(data);
+                var signRawTransaction = await _bitcoinCoreClient.BitcoinRequestServer("signrawtransactionwithwallet", rawTransactionResponse.result);
+                var signRawTransactionResponse = JsonSerializer.Deserialize<SignRawTransactionResponse>(signRawTransaction);
+                var sendRawTransaction = await _bitcoinCoreClient.BitcoinRequestServer("sendrawtransaction", signRawTransactionResponse.result.hex);
+                var sendRawTransactionResponse = JsonSerializer.Deserialize<CreateRawTransactionResponse>(sendRawTransaction);
+                return Result.Success("Getting list of UTXO was successful", sendRawTransactionResponse);
             }
             catch (Exception ex)
             {
