@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SatoshiDice.Application.Interfaces;
 using SatoshiDice.Domain.Entities;
 using System;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SatoshiDice.Infrastructure.Data
 {
-    public class AppDbContext : DbContext, IAppDbContext
+    public class AppDbContext : IdentityDbContext, IAppDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -17,6 +18,7 @@ namespace SatoshiDice.Infrastructure.Data
         }
 
         public DbSet<Player> Players { get; set; }
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

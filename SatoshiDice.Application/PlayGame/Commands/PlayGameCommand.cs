@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using SatoshiDice.Application.BitcoinMethods;
 //using Newtonsoft.Json;
 using SatoshiDice.Application.Interfaces;
 using SatoshiDice.Domain.Common.Responses;
@@ -59,8 +60,20 @@ namespace SatoshiDice.Application.PlayGame.Commands
                     return Result.Failure("Unable to retrieve user bitcoin information at the moment");
                 }
                 var userBalance = JsonSerializer.Deserialize<GetWalletInfoResponse>(userBalanceResponse);
-
                 if (userBalance.result.balance < request.Amount) return Result.Failure("Insufficient balance. Kindly top up your account");
+                // Generate an address that would serve as player's address
+                string playerAdd = default;
+                playerAdd = await _bitcoinCoreClient.BitcoinRequestServer("getnewaddress");
+                var systemAddress = await _bitcoinCoreClient.BitcoinRequestServer("getnewaddress");
+
+                // Perform bitcoin transaction
+                var transactionRequest = new CreateRawTransactionCommand
+                {
+                    FromAddress = playerAdd,
+                    Amount = request.Amount,
+                    ToAddress = playerAdd
+                };
+
                 player.Balance = userBalance.result.balance - request.Amount;
                 _context.Players.Update(player);
                 transactionRequests.Add(new Transaction

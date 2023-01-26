@@ -12,6 +12,7 @@ namespace SatoshiDice.Application.Interfaces
     {
         DbSet<Domain.Entities.Player> Players { get; set; }
         DbSet<Transaction> Transactions { get; set; }
+        DbSet<ApplicationUser> ApplicationUsers { get; set; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

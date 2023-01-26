@@ -14,7 +14,9 @@ namespace SatoshiDice.Application.BitcoinMethods
 {
     public class CreateRawTransactionCommand : IRequest<Result>
     {
+        public string FromAddress { get; set; }
         public string ToAddress { get; set; }
+        public decimal Amount { get; set; }
     }
 
     public class CreateRawTransactionCommandHandler : IRequestHandler<CreateRawTransactionCommand, Result>
@@ -30,14 +32,19 @@ namespace SatoshiDice.Application.BitcoinMethods
             try
             {
                 // List unspent transaction
+                string senderAddress = default;
+                if (string.IsNullOrEmpty(request.FromAddress))
+                {
+                    //var getNewAddress = await _bitcoinCoreClient.BitcoinRequestServer("getnewaddress");
+                }
                 var listUnspentResponse = await _bitcoinCoreClient.BitcoinRequestServer("listunspent");
                 var listUnspentTransactions = JsonSerializer.Deserialize<UTXOResult>(listUnspentResponse);
-                var paymentTx = listUnspentTransactions.result.FirstOrDefault(c => c.amount > 1);
-                var maxTx = listUnspentTransactions.result.Max(c => c.amount);
-                if(paymentTx != null)
+                if(listUnspentTransactions.result.Count <= 0)
                 {
-                    // Pay with that particular transaction
+                    return Result.Failure("No available UTXO. Kindly fund your account using a test faucet");
                 }
+                var totalUtxoAvailable = listUnspentTransactions.result.Sum(c => c.amount);
+                var balance = totalUtxoAvailable - request.Amount;
                 JContainer jArray = new JArray();
                 foreach (var txn in listUnspentTransactions.result)
                 {
@@ -50,7 +57,8 @@ namespace SatoshiDice.Application.BitcoinMethods
                 }
                 JObject jtoTx = new JObject
                 {
-                    { request.ToAddress, 0.000005 }
+                    { request.ToAddress, request.Amount },
+                    { request.FromAddress, balance  }
                 };
                 JContainer jArray2 = new JArray
                 {
@@ -62,7 +70,7 @@ namespace SatoshiDice.Application.BitcoinMethods
                 var signRawTransactionResponse = JsonSerializer.Deserialize<SignRawTransactionResponse>(signRawTransaction);
                 var sendRawTransaction = await _bitcoinCoreClient.BitcoinRequestServer("sendrawtransaction", signRawTransactionResponse.result.hex);
                 var sendRawTransactionResponse = JsonSerializer.Deserialize<CreateRawTransactionResponse>(sendRawTransaction);
-                return Result.Success("Getting list of UTXO was successful", sendRawTransactionResponse);
+                return Result.Success("Creating and sending transaction was successful", sendRawTransactionResponse);
             }
             catch (Exception ex)
             {

@@ -18,7 +18,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Players\Commands\ActivatePlayer\" />
+    <Folder Include="Players\Commands\DeactivatePlayer\" />
+    <Folder Include="Players\Commands\DeletePlayer\" />
+    <Folder Include="Players\Commands\UpdatePlayerStatus\" />
+    <Folder Include="Players\Commands\UpdatePlayer\" />
+    <Folder Include="Players\Queries\" />
     <Folder Include="PlayGame\Queries\" />
+    <Folder Include="Transactions\Commands\CreateTransaction\" />
+    <Folder Include="Transactions\Commands\CreateTransactions\" />
+    <Folder Include="Transactions\Queries\" />
   </ItemGroup>
 
 </Project>
