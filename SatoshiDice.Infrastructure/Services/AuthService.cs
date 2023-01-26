@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using SatoshiDice.Application.Common.Interfaces;
 using SatoshiDice.Application.Interfaces;
 using SatoshiDice.Domain.Entities;
@@ -7,7 +8,9 @@ using SatoshiDice.Domain.Enums;
 using SatoshiDice.Domain.Model;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -95,9 +98,34 @@ namespace SatoshiDice.Infrastructure.Services
             }
         }
 
-        public Task<Result> EmailVerification(string email, string otp)
+        public async Task<Result> EmailVerification(string email, string otp)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    return Result.Failure("Invalid user specified");
+                }
+                var otpValidation = await ValidateOtp(email, otp);
+                if (!otpValidation.Succeeded)
+                {
+                    return Result.Failure(otpValidation.Message);
+                }
+                user.EmailConfirmed = true;
+                user.Status = Status.Active;
+                var updatedResponse = await _userManager.UpdateAsync(user);
+                if (!updatedResponse.Succeeded)
+                {
+                    return Result.Failure("An error occured while verifying email. Please contact support");
+                }
+                return Result.Success("Email verification was successful");
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
 
         public async Task<Result> GenerateOtp(string email)
@@ -109,7 +137,7 @@ namespace SatoshiDice.Infrastructure.Services
                 {
                     return Result.Failure("Invalid user specified");
                 }
-                var otp = await _userManager.GenerateTwoFactorTokenAsync(user, "Email");
+                var otp = await _userManager.GenerateTwoFactorTokenAsync(user, email);
                 if(otp == null)
                 {
                     return Result.Failure("Unable to create OTP. Kindly contact support");
@@ -136,9 +164,10 @@ namespace SatoshiDice.Infrastructure.Services
                 {
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    Email = email
+                    Email = email,
+                    UserId = user.UserId
                 };
-                return (Result.Success("Email retreval was successful"), userDetails);
+                return (Result.Success("User details retreval was successful"), userDetails);
             }
             catch (Exception ex)
             {
@@ -147,29 +176,153 @@ namespace SatoshiDice.Infrastructure.Services
             }
         }
 
-        public Task<(Result result, User user)> GetUserById(string userid)
+        public async Task<(Result result, User user)> GetUserById(string userid)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var exisingUser = await _userManager.FindByIdAsync(userid);
+                if(exisingUser == null)
+                {
+                    return (Result.Failure("Invalid user specified"), null);
+                }
+                var user = new User
+                {
+                    FirstName = exisingUser.FirstName,
+                    LastName = exisingUser.LastName,
+                    Email = exisingUser.Email,
+                    UserId = userid
+                };
+                return (Result.Success("User details retreval was successful"), user);
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
 
-        public Task<Result> LoginAsync(string email, string password)
+        public async Task<Result> LoginAsync(string email, string password)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if(user == null)
+                {
+                    return Result.Failure("Invalid email or password specified");
+                }
+                var checkPassword = await _userManager.CheckPasswordAsync(user, password);
+                if (!checkPassword)
+                {
+                    return Result.Failure("Invalid email or password specified");
+                }
+                var jwtToken = GenerateJwtToken(user.UserId, user.Email);
+                return Result.Success(jwtToken);
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
 
-        public Task<Result> ResetPassword(string email, string password)
+        public async Task<Result> ResetPassword(string email, string password)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if(user == null)
+                {
+                    return Result.Failure("Invalid user specified");
+                }
+                var resetPasswordToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                if(resetPasswordToken == null)
+                {
+                    return Result.Failure("An error occured. Please contact support");
+                }
+                var resetPassword = await _userManager.ResetPasswordAsync(user, resetPasswordToken, password);
+                if (!resetPassword.Succeeded)
+                {
+                    return Result.Failure("Password reset was not successful. Kindly contact support");
+                }
+                return Result.Success("Password reset was successful");
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
 
-        public Task<Result> UpdateUserAsync(User user)
+        public async Task<Result> UpdateUserAsync(User user)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var existingUser = await _userManager.FindByEmailAsync(user.Email);
+                if (existingUser == null)
+                {
+                    return Result.Failure("Invalid user specified");
+                }
+                existingUser.FirstName = user.FirstName;
+                existingUser.LastName = user.LastName;
+                var updatedResponse = await _userManager.UpdateAsync(existingUser);
+                if (!updatedResponse.Succeeded)
+                {
+                    return Result.Failure("An error occured while updating user details. Please contact support");
+                }
+                return Result.Success("User update was successful");
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
 
-        public Task<Result> ValidateOtp(string email, string otp)
+        public async Task<Result> ValidateOtp(string email, string otp)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if(user == null)
+                {
+                    return Result.Failure("Invalid user specified");
+                }
+                var validate = await _userManager.VerifyTwoFactorTokenAsync(user, email, otp);
+                if (!validate)
+                {
+                    return Result.Failure("Error while validating OTP");
+                }
+                return Result.Success("OTP validated successfully");
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+        }
+
+
+
+        private string GenerateJwtToken(string UserId, string email)
+        {
+            var jwtTokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_config["TokenConstants:key"]);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Email, email),
+                    new Claim("userId", UserId),
+                    new Claim(JwtRegisteredClaimNames.Sub, email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddHours(6),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+            var jwtToken = jwtTokenHandler.WriteToken(token);
+            return jwtToken;
         }
     }
 }

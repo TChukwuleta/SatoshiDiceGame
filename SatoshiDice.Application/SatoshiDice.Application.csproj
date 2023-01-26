@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.4.0" />
     <PackageReference Include="MediatR" Version="11.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.10" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
@@ -28,6 +29,9 @@
     <Folder Include="Transactions\Commands\CreateTransaction\" />
     <Folder Include="Transactions\Commands\CreateTransactions\" />
     <Folder Include="Transactions\Queries\" />
+    <Folder Include="Users\Commands\UserPasswordChange\" />
+    <Folder Include="Users\Commands\UpdateUser\" />
+    <Folder Include="Users\Queries\" />
   </ItemGroup>
 
 </Project>
