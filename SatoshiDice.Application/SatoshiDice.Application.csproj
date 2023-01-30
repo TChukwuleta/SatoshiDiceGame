@@ -26,12 +26,7 @@
     <Folder Include="Players\Commands\UpdatePlayer\" />
     <Folder Include="Players\Queries\" />
     <Folder Include="PlayGame\Queries\" />
-    <Folder Include="Transactions\Commands\CreateTransaction\" />
-    <Folder Include="Transactions\Commands\CreateTransactions\" />
-    <Folder Include="Transactions\Queries\" />
-    <Folder Include="Users\Commands\UserPasswordChange\" />
     <Folder Include="Users\Commands\UpdateUser\" />
-    <Folder Include="Users\Queries\" />
   </ItemGroup>
 
 </Project>

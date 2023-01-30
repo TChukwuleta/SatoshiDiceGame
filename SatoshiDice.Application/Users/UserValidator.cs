@@ -18,4 +18,13 @@ namespace SatoshiDice.Application.Users
             RuleFor(c => c.Password).NotNull().NotEmpty().WithMessage("Password must be specified");
         }
     }
+
+    class UserLoginValidator : AbstractValidator<IUserLoginValidator>
+    {
+        public UserLoginValidator()
+        {
+            RuleFor(c => c.Email).NotNull().NotEmpty().WithMessage("Email must be specified");
+            RuleFor(c => c.Password).NotNull().NotEmpty().WithMessage("Password must be specified");
+        }
+    }
 }

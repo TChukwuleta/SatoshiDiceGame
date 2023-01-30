@@ -24,6 +24,10 @@ namespace SatoshiDice.Application.Common.Interfaces.Validators
     {
         public int Id { get; set; }
     }
+    public interface IUserIdValidator : IBaseValidator
+    {
+        public string UserId { get; set; }
+    }
     public interface IEmailValidator : IBaseValidator
     {
         public string Email { get; set; }

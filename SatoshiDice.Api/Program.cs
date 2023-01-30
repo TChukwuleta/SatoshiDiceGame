@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SatoshiDice.Application.Common.Interfaces;
 using SatoshiDice.Application.Interfaces;
 using SatoshiDice.Domain.Entities;
 using SatoshiDice.Infrastructure.Data;
 using SatoshiDice.Infrastructure.Services;
+using StackExchange.Redis;
 using System.Reflection;
 using System.Text;
 
@@ -55,6 +57,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(option => 
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")));
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
 
@@ -62,6 +67,7 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(opts => opts.Toke
 
 builder.Services.AddScoped<IAppDbContext>(prov => prov.GetService<AppDbContext>());
 builder.Services.AddTransient<IBitcoinCoreClient, BitcoinCoreClient>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 

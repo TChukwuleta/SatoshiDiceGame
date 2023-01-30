@@ -9,6 +9,7 @@ namespace SatoshiDice.Domain.Entities
 {
     public class Transaction : AuditableEntity
     {
+        public Guid TxnId { get; set; } = Guid.NewGuid();
         public string UserId { get; set; }
         public decimal Amount { get; set; }
         public TransactionType TransactionType { get; set; }
