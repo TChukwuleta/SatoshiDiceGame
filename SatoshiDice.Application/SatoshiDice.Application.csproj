@@ -19,13 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Players\Commands\ActivatePlayer\" />
-    <Folder Include="Players\Commands\DeactivatePlayer\" />
-    <Folder Include="Players\Commands\DeletePlayer\" />
-    <Folder Include="Players\Commands\UpdatePlayerStatus\" />
-    <Folder Include="Players\Commands\UpdatePlayer\" />
-    <Folder Include="Players\Queries\" />
-    <Folder Include="PlayGame\Queries\" />
+    <Folder Include="Game\Queries\" />
+    <Folder Include="Users\Commands\ActivateUser\" />
+    <Folder Include="Users\Commands\DeactivateUser\" />
+    <Folder Include="Users\Commands\DeleteUser\" />
+    <Folder Include="Users\Commands\UpdateUserStatus\" />
     <Folder Include="Users\Commands\UpdateUser\" />
   </ItemGroup>
 

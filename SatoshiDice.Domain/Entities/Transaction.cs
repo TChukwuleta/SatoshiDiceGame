@@ -13,6 +13,8 @@ namespace SatoshiDice.Domain.Entities
         public string UserId { get; set; }
         public decimal Amount { get; set; }
         public TransactionType TransactionType { get; set; }
+        public string FromUser { get; set; }
+        public string ToUser { get; set; }
         public string TransactionTypeDesc
         {
             get { return TransactionType.ToString(); }

@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SatoshiDice.Application.Players
+namespace SatoshiDice.Domain.Enums
 {
-    internal class PlayerDto
+    public enum PaymentModeType
     {
+        Bitcoin = 1,
+        Lightning,
+        Fiat
     }
 }

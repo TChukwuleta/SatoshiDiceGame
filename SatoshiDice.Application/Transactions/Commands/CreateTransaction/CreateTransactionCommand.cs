@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using SatoshiDice.Application.Common.Interfaces;
+using SatoshiDice.Application.Common.Interfaces.Validators.TransactionValidator;
 using SatoshiDice.Application.Interfaces;
 using SatoshiDice.Domain.Entities;
 using SatoshiDice.Domain.Enums;
@@ -12,11 +13,14 @@ using System.Threading.Tasks;
 
 namespace SatoshiDice.Application.Transactions.Commands
 {
-    public class CreateTransactionCommand : IRequest<Result>
+    public class CreateTransactionCommand : IRequest<Result>, ITransactionRequestValidator
     {
         public string UserId { get; set; }
+        public string FromUser { get; set; }
+        public string ToUser { get; set; }
         public decimal Amount { get; set; }
         public TransactionType TransactionType { get; set; }
+        public string ToAddress { get; set; }
     }
 
     public class CreateTransactionCommandHandler : IRequestHandler<CreateTransactionCommand, Result>
@@ -44,6 +48,8 @@ namespace SatoshiDice.Application.Transactions.Commands
                 }
                 var entity = new Transaction
                 {
+                    FromUser = request.FromUser,
+                    ToUser = request.ToUser,
                     UserId = request.UserId,
                     Amount = request.Amount,
                     TransactionType = request.TransactionType,
@@ -58,7 +64,7 @@ namespace SatoshiDice.Application.Transactions.Commands
             }
             catch (Exception ex)
             {
-                return Result.Failure(new string[] { "Transaction creation was not successful", ex?.Message ?? ex?.InnerException.Message });
+                return Result.Failure(new string[] { "Transactions creation was not successful", ex?.Message ?? ex?.InnerException.Message });
             }
         }
     }

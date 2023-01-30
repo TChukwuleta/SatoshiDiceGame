@@ -89,7 +89,7 @@ namespace SatoshiDice.Infrastructure.Services
                 newUser.UserId = newUser.Id;
                 await _userManager.UpdateAsync(newUser);
                 await _context.SaveChangesAsync(new CancellationToken());
-                return Result.Success("User creation was successful", newUser);
+                return Result.Success(newUser);
             }
             catch (Exception ex)
             {

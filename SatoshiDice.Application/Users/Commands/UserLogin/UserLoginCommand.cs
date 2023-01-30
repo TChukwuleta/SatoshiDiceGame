@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SatoshiDice.Application.Users.Commands.UserLogin
+namespace SatoshiDice.Application.Users.Commands
 {
     public class UserLoginCommand : IRequest<Result>, IUserLoginValidator
     {

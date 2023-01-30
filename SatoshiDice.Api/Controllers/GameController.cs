@@ -2,8 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SatoshiDice.Application.BitcoinMethods;
-using SatoshiDice.Application.Player.Commands;
-using SatoshiDice.Application.PlayGame.Commands;
+using SatoshiDice.Application.Game.Commands;
 using SatoshiDice.Domain.Model;
 
 namespace SatoshiDice.Api.Controllers

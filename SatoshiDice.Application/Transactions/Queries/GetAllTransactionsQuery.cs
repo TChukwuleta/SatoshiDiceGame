@@ -15,6 +15,8 @@ namespace SatoshiDice.Application.Transactions.Queries
 {
     public class GetAllTransactionsQuery : IRequest<Result>, IBaseValidator
     {
+        public int Skip { get; set; }
+        public int Take { get; set; }
         public string UserId { get; set; }
     }
 
@@ -40,17 +42,22 @@ namespace SatoshiDice.Application.Transactions.Queries
                 {
                     return Result.Failure("Transactions retrieval was not successful. Invalid user details");
                 }
-                var transactions = await _cacheService.GetData<Transaction>("transaction");
-                if(transactions != null && transactions.Count() > 0)
+                var allTransactions = await _cacheService.GetData<Transaction>("transaction");
+                if(allTransactions != null && allTransactions.Count() > 0)
                 {
-                    return Result.Success("Transactions retrieval was successful", transactions);
+                    var transactions = allTransactions.Where(c => c.UserId == request.UserId).ToList();
+                    if(transactions.Count <= 0)
+                    {
+                        return Result.Failure("No transactions found for this user");
+                    }
+                    return Result.Success("Transactions retrieval was successful", transactions.Skip(request.Skip).Take(request.Take).ToList());
                 }
                 var entity = await _context.Transactions.Where(c => c.UserId == request.UserId).ToListAsync();
                 if(entity.Count <= 0)
                 {
                     return Result.Failure("No transactions found for this user");
                 }
-                return Result.Success("Transactions retrieval was successful", entity);
+                return Result.Success("Transactions retrieval was successful", entity.Skip(request.Skip).Take(request.Take).ToList());
             }
             catch (Exception ex)
             {

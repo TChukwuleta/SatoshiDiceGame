@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SatoshiDice.Application.Player.Commands;
+using SatoshiDice.Application.Player;
 using SatoshiDice.Application.TestEndpoints;
 using SatoshiDice.Domain.Model;
 

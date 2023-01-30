@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SatoshiDice.Application.Users.Queries
 {
-    public class GetUserByIdQuery : IRequest<Result>, IUserIdValidator
+    public class GetUserByIdQuery : IRequest<Result>, IBaseValidator
     {
         public string UserId { get; set; }
     }

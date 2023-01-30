@@ -68,6 +68,7 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(opts => opts.Toke
 builder.Services.AddScoped<IAppDbContext>(prov => prov.GetService<AppDbContext>());
 builder.Services.AddTransient<IBitcoinCoreClient, BitcoinCoreClient>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 
 var app = builder.Build();
 
