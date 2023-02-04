@@ -78,7 +78,8 @@ namespace SatoshiDice.Infrastructure.Services
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Status = Status.Inactive,
-                    NormalizedEmail = user.Email
+                    NormalizedEmail = user.Email,
+                    UserName = user.Email
                 };
                 var result = await _userManager.CreateAsync(newUser, user.Password);
                 if (!result.Succeeded)

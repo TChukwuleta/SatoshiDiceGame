@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.21.12" />
+    <PackageReference Include="Grpc.Core" Version="2.46.6" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.51.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.51.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.10" />
@@ -18,6 +25,10 @@
     <PackageReference Include="RestSharp" Version="108.0.2" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.90" />
   </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Grpc\lightning.proto" GrpcServices="Client" />
+	</ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SatoshiDice.Application\SatoshiDice.Application.csproj" />
