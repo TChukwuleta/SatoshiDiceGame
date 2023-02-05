@@ -9,12 +9,18 @@ namespace SatoshiDice.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class GameController : ControllerBase
+    public class GameController : ApiController
     {
-        private readonly IMediator _mediator;
-        public GameController(IMediator mediator)
+        protected readonly IHttpContextAccessor _contextAccessor;
+        private readonly string accessToken;
+        public GameController(IHttpContextAccessor contextAccessor)
         {
-            _mediator = mediator;
+            _contextAccessor = contextAccessor;
+            accessToken = _contextAccessor.HttpContext.Request.Headers["Authorization"].ToString();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                throw new Exception("You are not authorized!");
+            }
         }
 
         [HttpPost("playgame")]
@@ -22,7 +28,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(command);
+                return await Mediator.Send(command);
             }
             catch (Exception ex)
             {
@@ -35,7 +41,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(command);
+                return await Mediator.Send(command);
             }
             catch (Exception ex)
             {

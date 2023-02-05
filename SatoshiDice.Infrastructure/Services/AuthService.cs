@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SatoshiDice.Application.Common.Interfaces;
@@ -79,7 +80,7 @@ namespace SatoshiDice.Infrastructure.Services
                     LastName = user.LastName,
                     Status = Status.Inactive,
                     NormalizedEmail = user.Email,
-                    UserName = user.Email
+                    UserName = user.Email,
                 };
                 var result = await _userManager.CreateAsync(newUser, user.Password);
                 if (!result.Succeeded)
@@ -88,6 +89,7 @@ namespace SatoshiDice.Infrastructure.Services
                     return Result.Failure(errors);
                 }
                 newUser.UserId = newUser.Id;
+                newUser.Email = user.Email;
                 await _userManager.UpdateAsync(newUser);
                 await _context.SaveChangesAsync(new CancellationToken());
                 return Result.Success(newUser);
@@ -152,6 +154,36 @@ namespace SatoshiDice.Infrastructure.Services
             }
         }
 
+        public async Task<(Result result, List<User> users)> GetAllUsers(int skip, int take)
+        {
+            var users = new List<User>();
+            try
+            {
+                var applicationsUsers = await _userManager.Users.ToListAsync();
+                if (skip != 0 && take != 0)
+                {
+                    applicationsUsers = applicationsUsers.Skip(skip).Take(take).ToList();
+                }
+                foreach (var appUser in applicationsUsers)
+                {
+                    users.Add(new User
+                    {
+                        FirstName = appUser.FirstName,
+                        LastName = appUser.LastName,
+                        Balance = appUser.Balance,
+                        Email = appUser.Email,
+                        UserId = appUser.UserId
+                    });
+                }
+                return (Result.Success("Users retrieval was successful"), users);
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+        }
+
         public async Task<(Result result, User user)> GetUserByEmail(string email)
         {
             try
@@ -206,7 +238,7 @@ namespace SatoshiDice.Infrastructure.Services
         {
             try
             {
-                var user = await _userManager.FindByEmailAsync(email);
+                var user = await _userManager.FindByNameAsync(email);
                 if(user == null)
                 {
                     return Result.Failure("Invalid email or password specified");
@@ -216,7 +248,7 @@ namespace SatoshiDice.Infrastructure.Services
                 {
                     return Result.Failure("Invalid email or password specified");
                 }
-                var jwtToken = GenerateJwtToken(user.UserId, user.Email);
+                var jwtToken = GenerateJwtToken(user.UserId, user.UserName);
                 return Result.Success(jwtToken);
             }
             catch (Exception ex)

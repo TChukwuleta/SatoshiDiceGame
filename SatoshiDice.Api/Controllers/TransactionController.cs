@@ -9,12 +9,14 @@ namespace SatoshiDice.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TransactionController : ControllerBase
+    public class TransactionController : ApiController
     {
-        private readonly IMediator _mediator;
-        public TransactionController(IMediator mediator)
+        protected readonly IHttpContextAccessor _contextAccessor;
+        private readonly string accessToken;
+        public TransactionController(IHttpContextAccessor contextAccessor)
         {
-            _mediator = mediator;
+            _contextAccessor = contextAccessor;
+            accessToken = _contextAccessor.HttpContext.Request.Headers["Authorization"].ToString();
         }
 
         [HttpPost("createtransaction")]
@@ -22,7 +24,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(command);
+                return await Mediator.Send(command);
             }
             catch (Exception ex)
             {
@@ -36,7 +38,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(new GetAllTransactionsQuery { Skip = skip, Take = take, UserId = userid });
+                return await Mediator.Send(new GetAllTransactionsQuery { Skip = skip, Take = take, UserId = userid });
             }
             catch (Exception ex)
             {
@@ -50,7 +52,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(new GetTransactionByIdQuery { Id = id, UserId = userid });
+                return await Mediator.Send(new GetTransactionByIdQuery { Id = id, UserId = userid });
             }
             catch (Exception ex)
             {
@@ -64,7 +66,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(new GetTransactionsByTxnIdQuery { TxnId = txnid, UserId = userid });
+                return await Mediator.Send(new GetTransactionsByTxnIdQuery { TxnId = txnid, UserId = userid });
             }
             catch (Exception ex)
             {
@@ -78,7 +80,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(new GetCreditTransactionsByUserIdQuery { UserId = userid, Skip = skip, Take = take });
+                return await Mediator.Send(new GetCreditTransactionsByUserIdQuery { UserId = userid, Skip = skip, Take = take });
             }
             catch (Exception ex)
             {
@@ -92,7 +94,7 @@ namespace SatoshiDice.Api.Controllers
         {
             try
             {
-                return await _mediator.Send(new GetDebitTransactionsByUserIdQuery { UserId = userid,  Skip = skip, Take = take });
+                return await Mediator.Send(new GetDebitTransactionsByUserIdQuery { UserId = userid,  Skip = skip, Take = take });
             }
             catch (Exception ex)
             {

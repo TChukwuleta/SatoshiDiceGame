@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using SatoshiDice.Application.Common.Interfaces;
+using SatoshiDice.Domain.Enums;
 using SatoshiDice.Domain.Model;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace SatoshiDice.Application.TestEndpoints.LightningCommands
         {
             try
             {
-                _lightningClient.SendLightning(request.PaymentRequest);
+                _lightningClient.SendLightning(request.PaymentRequest, UserType.User);
                 return Result.Success("Invoice paid successfully");
             }
             catch (Exception ex)

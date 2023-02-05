@@ -31,19 +31,6 @@ namespace SatoshiDice.Api.Controllers
             }
         }
 
-        [HttpPost("testlightningmethod")]
-        public async Task<ActionResult<Result>> LightningMethod(TestLightningCommand command)
-        {
-            try
-            {
-                return await _mediator.Send(command);
-            }
-            catch (Exception ex)
-            {
-                return Result.Failure($"Failed to make the method call successfully. Error: {ex?.Message ?? ex?.InnerException?.Message}");
-            }
-        }
-
         [HttpPost("payinvoice")]
         public async Task<ActionResult<Result>> LightningPayInvoice(PayInvoiceCommand command)
         {

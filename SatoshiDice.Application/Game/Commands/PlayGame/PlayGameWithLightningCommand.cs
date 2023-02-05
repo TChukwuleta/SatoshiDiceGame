@@ -27,17 +27,19 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
     {
         private readonly IAppDbContext _context;
         private readonly IConfiguration _config;
+        private readonly IBitcoinCoreClient _bitcoinCoreClient;
         private readonly ILightningClient _lightningClient;
         private readonly IAuthService _authService;
         private readonly ICacheService _cacheService;
 
-        public PlayGameWithLightningCommandHandler(IAppDbContext context, IConfiguration config, ILightningClient lightningClient, IAuthService authService, ICacheService cacheService)
+        public PlayGameWithLightningCommandHandler(IAppDbContext context, IConfiguration config, ILightningClient lightningClient, IAuthService authService, ICacheService cacheService, IBitcoinCoreClient bitcoinCoreClient)
         {
             _context = context;
             _config = config;
             _lightningClient = lightningClient;
             _authService = authService;
             _cacheService = cacheService;
+            _bitcoinCoreClient = bitcoinCoreClient;
         }
 
         public async Task<Result> Handle(PlayGameWithLightningCommand request, CancellationToken cancellationToken)
@@ -51,18 +53,26 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                 }
 
                 // Check the user lightning wallet balance
-                var walletBalance = await _lightningClient.GetWalletBalance();
+                var walletBalance = await _lightningClient.GetWalletBalance(UserType.User);
                 if(walletBalance < request.Amount)
                 {
                     return Result.Failure("Insufficient funds. Kindly topup your lightning wallet");
                 }
-                
+
                 // Admin generates invoice and player pays the invoice before we proceed to the game
+                // Admin generates invoice
+                var gameInvoice = await _lightningClient.CreateInvoice((long)request.Amount, "About to pay for game", UserType.Admin);
+                if (string.IsNullOrEmpty(gameInvoice))
+                {
+                    return Result.Failure("An error occured while generating invoice");
+                }
 
-
-                // Create two address. One to act as the player address, and the other to act like the system address
-                var playerAddress = await _bitcoinCoreClient.BitcoinRequestServer("getnewaddress");
-                var systemAddress = await _bitcoinCoreClient.BitcoinRequestServer("getnewaddress");
+                // User/ Player play the invoice
+                var payGameInvoice = await _lightningClient.SendLightning(gameInvoice, UserType.User);
+                if (!string.IsNullOrEmpty(payGameInvoice))
+                {
+                    return Result.Failure($"An error occured while paying for the invoice. {payGameInvoice}");
+                }
 
                 // Perform Bitcoin transaction: create raw transaction
                 bool transactionSuccess = false;
@@ -72,17 +82,17 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                 var txnReqs = new List<TransactionRequest>();
                 txnReqs.Add(new TransactionRequest
                 {
-                    UserId = user.user.UserId, // Change to system UserId
-                    FromUser = playerAddress,
-                    ToAddress = systemAddress,
+                    UserId = _config["AdminUserId"], // Change to system UserId
+                    FromUser = user.user.UserId,
+                    ToAddress = _config["AdminUserId"],
                     Amount = request.Amount,
                     TransactionType = TransactionType.Credit
                 });
                 txnReqs.Add(new TransactionRequest
                 {
                     UserId = user.user.UserId,
-                    FromUser = playerAddress,
-                    ToAddress = systemAddress,
+                    FromUser = user.user.UserId,
+                    ToAddress = _config["AdminUserId"],
                     Amount = request.Amount,
                     TransactionType = TransactionType.Debit
                 });
@@ -98,11 +108,7 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                     return Result.Failure("An error occured while trying to process initial transaction");
                 }
 
-                // Update user's balance
-                user.user.Balance = userBalance.result.balance - request.Amount;
-                await _authService.UpdateUserAsync(user.user);
 
-                // Update system's balance
 
                 // Get True Value
                 var random = new Random();
@@ -110,68 +116,81 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                 decimal rate = default;
                 decimal winAmount = default;
                 var userGuess = request.FirstDice + request.SecondDice;
+                string message = string.Empty;
                 var guessDiff = Math.Abs(guessValue - userGuess);
                 switch (guessDiff)
                 {
                     case 0:
                         rate = request.Amount * (decimal)0.05;
                         winAmount = request.Amount + rate;
+                        message = "Yaaayyy.. Congratulations. You won";
                         break;
                     case 1:
                         rate = request.Amount * (decimal)0.02;
                         winAmount = request.Amount + rate;
+                        message = "Nice. That was close. Just one number different. You got a reward for that at least Welldone.";
                         break;
                     case 2:
                         rate = request.Amount * (decimal)0.01;
                         winAmount = request.Amount + rate;
+                        message = "You did good, but you didn't hit the mark. You got a reward for that at least Welldone.";
                         break;
                     case >= 3:
                         winAmount = 0;
+                        message = "Oops. You missed it. Try again";
                         break;
                     default:
                         break;
                 }
 
-                // Perform Bitcoin transaction: create raw transaction
-                bool atransactionSuccess = false;
-                // If transaction success, update transaction balance
+                if(winAmount > 0)
+                {
+                    // User generates invoice with win amount
+                    var winningInvoice = await _lightningClient.CreateInvoice((long)winAmount, "Win from the game", UserType.User);
+                    if (string.IsNullOrEmpty(winningInvoice))
+                    {
+                        return Result.Failure("An error occured while generating invoice");
+                    }
 
+                    var payWiningInvoice = await _lightningClient.SendLightning(winningInvoice, UserType.Admin);
+                    if (!string.IsNullOrEmpty(payGameInvoice))
+                    {
+                        return Result.Failure($"An error occured while paying for the invoice. {payWiningInvoice}");
+                    }
 
-                // Create transactions 
-                var winTxnReqs = new List<TransactionRequest>();
-                winTxnReqs.Add(new TransactionRequest
-                {
-                    UserId = user.user.UserId, // Change to system UserId
-                    FromUser = systemAddress,
-                    ToAddress = playerAddress,
-                    Amount = winAmount,
-                    TransactionType = TransactionType.Debit
-                });
-                winTxnReqs.Add(new TransactionRequest
-                {
-                    UserId = user.user.UserId,
-                    FromUser = systemAddress,
-                    ToAddress = playerAddress,
-                    Amount = winAmount,
-                    TransactionType = TransactionType.Credit
-                });
-                var finalTxnRequest = new CreateTransactionsCommand
-                {
-                    UserId = user.user.UserId,
-                    Transactions = winTxnReqs
+                    // Create transactions 
+                    var winTxnReqs = new List<TransactionRequest>();
+                    winTxnReqs.Add(new TransactionRequest
+                    {
+                        UserId = _config["AdminUserId"], // Change to system UserId
+                        ToAddress = user.user.UserId,
+                        FromUser = _config["AdminUserId"],
+                        Amount = winAmount,
+                        TransactionType = TransactionType.Debit
+                    });
+                    winTxnReqs.Add(new TransactionRequest
+                    {
+                        UserId = user.user.UserId,
+                        ToAddress = user.user.UserId,
+                        FromUser = _config["AdminUserId"],
+                        Amount = winAmount,
+                        TransactionType = TransactionType.Credit
+                    });
+                    var finalTxnRequest = new CreateTransactionsCommand
+                    {
+                        UserId = user.user.UserId,
+                        Transactions = winTxnReqs
 
-                };
-                var finalizeeGameTransactions = await new CreateTransactionsCommandHandler(_authService, _cacheService, _context).Handle(finalTxnRequest, cancellationToken);
-                if (!finalizeeGameTransactions.Succeeded)
-                {
-                    return Result.Failure("An error occured while trying to process initial transaction");
+                    };
+                    var finalizeeGameTransactions = await new CreateTransactionsCommandHandler(_authService, _cacheService, _context).Handle(finalTxnRequest, cancellationToken);
+                    if (!finalizeeGameTransactions.Succeeded)
+                    {
+                        return Result.Failure("An error occured while trying to process initial transaction");
+                    }
                 }
-                // Update user's balance
-                user.user.Balance = userBalance.result.balance + winAmount;
-                await _authService.UpdateUserAsync(user.user);
 
-                // Update system's balance
 
+                
 
 
                 /*if (request.GameInsured)
@@ -210,24 +229,7 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                     return Result.Success("Opps... Please play again", response);
                 }*/
 
-                string message = string.Empty;
-                switch (guessDiff)
-                {
-                    case 0:
-                        message = "Yaaayyy.. Congratulations. You won";
-                        break;
-                    case 1:
-                        message = "Nice. That was close. Just one number different. You got a reward for that at least Welldone.";
-                        break;
-                    case 2:
-                        message = "You did good, but you didn't hit the mark. You got a reward for that at least Welldone.";
-                        break;
-                    case > 2:
-                        message = "Oops. You missed it. Try again";
-                        break;
-                    default:
-                        break;
-                }
+                
 
                 var response = new
                 {

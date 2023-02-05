@@ -10,6 +10,6 @@ namespace SatoshiDice.Application.Common.Interfaces
         Task<long> GetChannelOutboundBalance(UserType userType);
         Task<long> GetChannelInboundBalance(UserType userType);
         Task<long> GetWalletBalance(UserType userType);
-        void SendLightning(string paymentRequest, UserType userType);
+        Task<string> SendLightning(string paymentRequest, UserType userType);
     }
 }

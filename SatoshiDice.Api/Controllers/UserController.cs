@@ -71,5 +71,23 @@ namespace SatoshiDice.Api.Controllers
                 return Result.Failure(new string[] { "User retrieval was not successful" + ex?.Message ?? ex?.InnerException?.Message });
             }
         }
+
+        [HttpGet("getall/{skip}/{take}/{email}")]
+        public async Task<ActionResult<Result>> GetAllUsers(int skip, int take, string email)
+        {
+            try
+            {
+                return await _mediator.Send(new GetAllUsersQUery
+                {
+                    Email = email,
+                    Skip = skip,
+                    Take = take
+                });
+            }
+            catch (Exception ex)
+            {
+                return Result.Failure(new string[] { "Users retrieval was not successful" + ex?.Message ?? ex?.InnerException?.Message });
+            }
+        }
     }
 }

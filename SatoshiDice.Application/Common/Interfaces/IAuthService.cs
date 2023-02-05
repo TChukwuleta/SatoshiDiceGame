@@ -20,5 +20,6 @@ namespace SatoshiDice.Application.Common.Interfaces
         Task<Result> UpdateUserAsync(User user);
         Task<(Result result, User user)> GetUserByEmail(string email);
         Task<(Result result, User user)> GetUserById(string userid);
+        Task<(Result result, List<User> users)> GetAllUsers(int skip, int take);
     }
 }

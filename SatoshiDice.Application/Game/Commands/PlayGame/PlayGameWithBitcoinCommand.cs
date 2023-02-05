@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Google.Protobuf;
+using MediatR;
 using Microsoft.Extensions.Configuration;
 using SatoshiDice.Application.Common.Interfaces;
 using SatoshiDice.Application.Common.Models;
@@ -76,7 +77,7 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                 var txnReqs = new List<TransactionRequest>();
                 txnReqs.Add(new TransactionRequest
                 {
-                    UserId = user.user.UserId, // Change to system UserId
+                    UserId = _config["AdminUserId"], // Change to system UserId
                     FromUser = playerAddress,
                     ToAddress = systemAddress,
                     Amount = request.Amount,
@@ -114,27 +115,33 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                 decimal rate = default;
                 decimal winAmount = default;
                 var userGuess = request.FirstDice + request.SecondDice;
+                string message = string.Empty;
                 var guessDiff = Math.Abs(guessValue - userGuess);
                 switch (guessDiff)
                 {
                     case 0:
                         rate = request.Amount * (decimal)0.05;
                         winAmount = request.Amount + rate;
+                        message = "Yaaayyy.. Congratulations. You won";
                         break;
                     case 1:
                         rate = request.Amount * (decimal)0.02;
                         winAmount = request.Amount + rate;
+                        message = "Nice. That was close. Just one number different. You got a reward for that at least Welldone.";
                         break;
                     case 2:
                         rate = request.Amount * (decimal)0.01;
                         winAmount = request.Amount + rate;
+                        message = "You did good, but you didn't hit the mark. You got a reward for that at least Welldone.";
                         break;
                     case >= 3:
                         winAmount = 0;
+                        message = "Oops. You missed it. Try again";
                         break;
                     default:
                         break;
                 }
+
 
                 // Perform Bitcoin transaction: create raw transaction
                 bool atransactionSuccess = false;
@@ -145,7 +152,7 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                 var winTxnReqs = new List<TransactionRequest>();
                 winTxnReqs.Add(new TransactionRequest
                 {
-                    UserId = user.user.UserId, // Change to system UserId
+                    UserId = _config["AdminUserId"], // Change to system UserId
                     FromUser = systemAddress,
                     ToAddress = playerAddress,
                     Amount = winAmount,
@@ -213,25 +220,6 @@ namespace SatoshiDice.Application.Game.Commands.PlayGame
                     };
                     return Result.Success("Opps... Please play again", response);
                 }*/
-
-                string message = string.Empty;
-                switch (guessDiff)
-                {
-                    case 0:
-                        message = "Yaaayyy.. Congratulations. You won";
-                        break;
-                    case 1:
-                        message = "Nice. That was close. Just one number different. You got a reward for that at least Welldone.";
-                        break;
-                    case 2:
-                        message = "You did good, but you didn't hit the mark. You got a reward for that at least Welldone.";
-                        break;
-                    case > 2:
-                        message = "Oops. You missed it. Try again";
-                        break;
-                    default:
-                        break;
-                }
 
                 var response = new
                 {

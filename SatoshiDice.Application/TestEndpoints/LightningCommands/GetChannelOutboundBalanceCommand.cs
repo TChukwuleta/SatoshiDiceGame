@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using SatoshiDice.Application.Common.Interfaces;
+using SatoshiDice.Domain.Enums;
 using SatoshiDice.Domain.Model;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace SatoshiDice.Application.TestEndpoints.LightningCommands
         {
             try
             {
-                var balance = await _lightningClient.GetChannelOutboundBalance();
+                var balance = await _lightningClient.GetChannelOutboundBalance(UserType.User);
                 return Result.Success(balance);
             }
             catch (Exception ex)

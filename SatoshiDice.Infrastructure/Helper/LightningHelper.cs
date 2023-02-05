@@ -35,9 +35,9 @@ namespace SatoshiDice.Infrastructure.Helper
 
         public Lnrpc.Lightning.LightningClient GetAdminClient()
         {
-            var sslCreds = GetSslCredentials();
+            var sslCreds = GetAdminSslCredentials();
             // Create channel (Not a lightning channel but a channel to your lightning node)
-            var channel = new Grpc.Core.Channel(userGRPCHost, sslCreds);
+            var channel = new Grpc.Core.Channel(adminGRPCHost, sslCreds);
             var client = new Lnrpc.Lightning.LightningClient(channel);
             return client;
         }

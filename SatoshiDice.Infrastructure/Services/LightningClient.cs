@@ -22,17 +22,24 @@ namespace SatoshiDice.Infrastructure.Services
 
         public async Task<string> CreateInvoice(long satoshis, string message, UserType userType)
         {
+            string paymentRequest = default;
+            var helper = new LightningHelper(_config);
             try
             {
-                /*var helper = new LightningHelper(_config);
-                var invoiceResponse = helper.CreateInvoice(satoshis, message);
-                var result = new
+                switch (userType)
                 {
-                    invoice = invoiceResponse,
-                    date = DateTime.Now
-                };
-                var invoice = JsonConvert.DeserializeObject(result);*/
-                return "Ok";
+                    case UserType.User:
+                        var invoiceResponse = helper.CreateInvoice(satoshis, message);
+                        paymentRequest = invoiceResponse.PaymentRequest;
+                        break;
+                    case UserType.Admin:
+                        var adminInvoiceResponse = helper.CreateAdminInvoice(satoshis, message);
+                        paymentRequest = adminInvoiceResponse.PaymentRequest;
+                        break;
+                    default:
+                        break;
+                }
+                return paymentRequest;
             }
             catch (Exception ex)
             {
@@ -115,18 +122,44 @@ namespace SatoshiDice.Infrastructure.Services
             }
         }
 
-        public void SendLightning(string paymentRequest, UserType userType)
+        public async Task<string> SendLightning(string paymentRequest, UserType userType)
         {
+            string result = default;
+            var helper = new LightningHelper(_config);
             try
             {
-                var helper = new LightningHelper(_config);
-                var client = helper.GetUserClient();
-                var sendRequest = new SendRequest();
-                sendRequest.Amt = 1000;
-                sendRequest.PaymentRequest = paymentRequest;
-                var response = client.SendPaymentSync(sendRequest, new Metadata() { new Metadata.Entry("macaroon", helper.GetMacaroon())});
-                Console.WriteLine(response);
-
+                switch (userType)
+                {
+                    case UserType.User:
+                        var client = helper.GetUserClient();
+                        // Decode payment request to get intended amount
+                        PayReqString paymentReq = new PayReqString();
+                        paymentReq.PayReq = paymentRequest;
+                        var decodedPaymentReq = client.DecodePayReq(paymentReq, new Metadata() { new Metadata.Entry("macaroon", helper.GetMacaroon()) });
+                        var sendRequest = new SendRequest();
+                        sendRequest.Amt = decodedPaymentReq.NumSatoshis;
+                        sendRequest.PaymentRequest = paymentRequest;
+                        var response = client.SendPaymentSync(sendRequest, new Metadata() { new Metadata.Entry("macaroon", helper.GetMacaroon()) });
+                        Console.WriteLine(response);
+                        result = response.PaymentError;
+                        break;
+                    case UserType.Admin:
+                        var adminClient = helper.GetAdminClient();
+                        // Decode payment request to get intended amount
+                        PayReqString adminPaymentReq = new PayReqString();
+                        adminPaymentReq.PayReq = paymentRequest;
+                        var decodedAdminPaymentReq = adminClient.DecodePayReq(adminPaymentReq, new Metadata() { new Metadata.Entry("macaroon", helper.GetMacaroon()) });
+                        var sendAdminRequest = new SendRequest();
+                        sendAdminRequest.Amt = decodedAdminPaymentReq.NumSatoshis;
+                        sendAdminRequest.PaymentRequest = paymentRequest;
+                        var adminResponse = adminClient.SendPaymentSync(sendAdminRequest, new Metadata() { new Metadata.Entry("macaroon", helper.GetMacaroon()) });
+                        Console.WriteLine(adminResponse);
+                        result = adminResponse.PaymentError;
+                        break;
+                    default:
+                        break;
+                }
+                return result;
             }
             catch (Exception ex)
             {

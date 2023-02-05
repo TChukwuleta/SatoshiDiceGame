@@ -26,8 +26,8 @@ namespace SatoshiDice.Application.TestEndpoints.LightningCommands
         {
             try
             {
-                _lightningClient.SendLightning(request.PaymentRequest);
-                return Result.Success("Invoice paid successfully");
+                var invoicePaid = await _lightningClient.SendLightning(request.PaymentRequest, Domain.Enums.UserType.User);
+                return Result.Success(invoicePaid);
             }
             catch (Exception ex)
             {

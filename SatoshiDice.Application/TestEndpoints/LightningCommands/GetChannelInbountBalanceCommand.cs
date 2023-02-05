@@ -25,7 +25,7 @@ namespace SatoshiDice.Application.TestEndpoints.LightningCommands
         {
             try
             {
-                var balance = await _lightningClient.GetChannelInboundBalance();
+                var balance = await _lightningClient.GetChannelInboundBalance(Domain.Enums.UserType.User);
                 return Result.Success(balance);
             }
             catch (Exception ex)

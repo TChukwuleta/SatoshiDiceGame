@@ -25,15 +25,17 @@ namespace SatoshiDice.Application.Game.Commands
         private readonly IBitcoinCoreClient _bitcoinCoreClient;
         private readonly IAuthService _authService;
         private readonly ICacheService _cacheService;
+        private readonly ILightningClient _lightningClient;
 
         public PlayGameCommandHandler(IAppDbContext context, IConfiguration config, IBitcoinCoreClient bitcoinCoreClient, 
-            IAuthService authService, ICacheService cacheService)
+            IAuthService authService, ICacheService cacheService, ILightningClient lightningClient)
         {
             _context = context;
             _config = config;
             _authService = authService;
             _cacheService = cacheService;
             _bitcoinCoreClient = bitcoinCoreClient;
+            _lightningClient = lightningClient;
         }
         public async Task<Result> Handle(PlayGameCommand request, CancellationToken cancellationToken)
         {
@@ -68,7 +70,20 @@ namespace SatoshiDice.Application.Game.Commands
                         }
                         return Result.Success(bitcoinGameMessage);
                     case PaymentModeType.Lightning:
-                        return Result.Success("Coming soon");
+                        var lightningGameRequest = new PlayGameWithLightningCommand
+                        {
+                            FirstDice = request.FirstDice,
+                            SecondDice = request.SecondDice,
+                            Amount = request.Amount,
+                            UserId = request.UserId
+                        };
+                        var lightningGame = await new PlayGameWithLightningCommandHandler(_context, _config,_lightningClient, _authService, _cacheService, _bitcoinCoreClient).Handle(lightningGameRequest, cancellationToken);
+                        var lightningGameMessage = lightningGame.Message != null ? lightningGame.Message : lightningGame.Messages.FirstOrDefault();
+                        if (!lightningGame.Succeeded)
+                        {
+                            return Result.Failure($"An error occured while trying to play game. {lightningGameMessage}");
+                        }
+                        return Result.Success(lightningGameMessage);
                         break;
                     case PaymentModeType.Fiat:
                         return Result.Success("We don't do that here");
